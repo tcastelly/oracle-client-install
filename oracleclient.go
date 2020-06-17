@@ -14,6 +14,7 @@ import (
   "path/filepath"
   "regexp"
   "strings"
+  "sync"
 )
 
 type writeCounter struct {
@@ -197,15 +198,37 @@ func Install(outputDir string) error {
     return err
   }
 
+  var wgDownload sync.WaitGroup
+  wgDownload.Add(2)
+
   basiclite := filepath.Base(configFiles.InstantclientBasic)
-  downloadFile(basiclite, configFiles.InstantclientBasic, "Download basic:")
+  go func() {
+    downloadFile(basiclite, configFiles.InstantclientBasic, "Download basic:")
+    wgDownload.Done()
+  }()
 
   sdk := filepath.Base(configFiles.InstantclientSdk)
-  downloadFile(sdk, configFiles.InstantclientSdk, "Download sdk:")
+  go func() {
+    downloadFile(sdk, configFiles.InstantclientSdk, "Download sdk:")
+    wgDownload.Done()
+  }()
 
+  wgDownload.Wait()
+
+  var wgInstall sync.WaitGroup
+  wgInstall.Add(2)
   fmt.Println("Installing ...")
-  unzip(basiclite, path.Join(outputDir, basiclite))
-  unzip(sdk, path.Join(outputDir, sdk))
+  go func() {
+    unzip(basiclite, path.Join(outputDir, basiclite))
+    wgInstall.Done()
+  }()
+
+  go func() {
+    unzip(sdk, path.Join(outputDir, sdk))
+    wgInstall.Done()
+  }()
+
+  wgInstall.Wait()
 
   err = rename(outputDir)
   if err != nil {
