@@ -204,13 +204,13 @@ func Install(outputDir string) error {
   basiclite := filepath.Base(configFiles.InstantclientBasic)
   go func() {
     downloadFile(basiclite, configFiles.InstantclientBasic, "Download basic:")
-    wgDownload.Done()
+    defer wgDownload.Done()
   }()
 
   sdk := filepath.Base(configFiles.InstantclientSdk)
   go func() {
     downloadFile(sdk, configFiles.InstantclientSdk, "Download sdk:")
-    wgDownload.Done()
+    defer wgDownload.Done()
   }()
 
   wgDownload.Wait()
@@ -220,12 +220,12 @@ func Install(outputDir string) error {
   fmt.Println("Installing ...")
   go func() {
     unzip(basiclite, path.Join(outputDir, basiclite))
-    wgInstall.Done()
+    defer wgInstall.Done()
   }()
 
   go func() {
     unzip(sdk, path.Join(outputDir, sdk))
-    wgInstall.Done()
+    defer wgInstall.Done()
   }()
 
   wgInstall.Wait()
