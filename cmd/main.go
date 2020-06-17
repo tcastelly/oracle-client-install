@@ -2,7 +2,7 @@ package main
 
 import (
   "fmt"
-  oracleclient "github.com/tcastelly/oracle-client-install/v1.0.1"
+  oracleclient "github.com/tcastelly/oracle-client-install"
   "os"
 )
 

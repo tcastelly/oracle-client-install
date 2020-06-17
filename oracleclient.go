@@ -5,7 +5,7 @@ import (
   "errors"
   "fmt"
   "github.com/dustin/go-humanize"
-  "github.com/tcastelly/oracle-client-install/v1.0.1/config"
+  "github.com/tcastelly/oracle-client-install/config"
   "io"
   "io/ioutil"
   "net/http"
