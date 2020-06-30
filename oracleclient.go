@@ -240,7 +240,7 @@ func Install(outputDir string) error {
     sdk,
   })
 
-  fmt.Printf("Driver installed: %s", outputDir)
+  fmt.Printf("Driver installed: %s\n", outputDir)
 
   return nil
 }
