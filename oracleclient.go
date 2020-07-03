@@ -223,6 +223,9 @@ func Install(outputDir string) error {
   return err
 }
 
+/**
+ * success chanel has 4 answers
+ */
 func InstallWithCh(outputDir string, ch chan<- string, errCh chan<- error) {
   defer close(ch)
   defer close(errCh)
