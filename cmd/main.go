@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   oracleclient "github.com/tcastelly/oracle-client-install"
+  "log"
   "os"
 )
 
@@ -23,7 +24,18 @@ func main() {
 
   if err := oracleclient.Uninstall(rootPath); err != nil {
     fmt.Println(err)
-  } else if err = oracleclient.Install(rootPath); err != nil {
-    fmt.Println(err)
+  } else {
+    install(rootPath)
   }
 }
+
+/**
+ * `Install` is a wrapper of `InstallWithCh`
+ */
+func install(rootPath string) {
+  err := oracleclient.Install(rootPath)
+  if err != nil {
+    log.Fatalf("%v", err)
+  }
+}
+

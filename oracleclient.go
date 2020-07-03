@@ -170,10 +170,12 @@ func rename(rootPath string) error {
   return nil
 }
 
-func clean(toRemove []string) {
+func clean(toRemove []string) error {
   for _, f := range toRemove {
-    os.Remove(f)
+    return os.Remove(f)
   }
+
+  return nil
 }
 
 func Uninstall(outputDir string) error {
@@ -187,44 +189,94 @@ func Uninstall(outputDir string) error {
   }
 
   fmt.Println("clean previous install")
-  os.RemoveAll(outputDir)
-
-  return nil
+  return os.RemoveAll(outputDir)
 }
 
 func Install(outputDir string) error {
+  var err error
+
+  var wg sync.WaitGroup
+
+  // success / error
+  wg.Add(2)
+
+  successCh := make(chan string)
+  errCh := make(chan error)
+
+  go InstallWithCh(outputDir, successCh, errCh)
+
+  go func(errCh <-chan error) {
+    err = <-errCh
+    wg.Done()
+  }(errCh)
+
+  go func(ch <-chan string) {
+    for str := range ch {
+      fmt.Println(str)
+    }
+    wg.Done()
+  }(successCh)
+
+  wg.Wait()
+
+  return err
+}
+
+func InstallWithCh(outputDir string, ch chan<- string, errCh chan<- error) {
+  defer close(ch)
+  defer close(errCh)
+
   configFiles, err := config.NewLinuxConfig()
   if err != nil {
-    return err
+    errCh <- err
   }
 
   var wgDownload sync.WaitGroup
+
+  // two downloads
   wgDownload.Add(2)
 
   basiclite := filepath.Base(configFiles.InstantclientBasic)
   go func() {
-    downloadFile(basiclite, configFiles.InstantclientBasic, "Download basic:")
+    err := downloadFile(basiclite, configFiles.InstantclientBasic, "Download basic:")
+    if err != nil {
+      errCh <- err
+    }
+    ch <- "Basic downloaded"
     defer wgDownload.Done()
   }()
 
   sdk := filepath.Base(configFiles.InstantclientSdk)
   go func() {
-    downloadFile(sdk, configFiles.InstantclientSdk, "Download sdk:")
+    err := downloadFile(sdk, configFiles.InstantclientSdk, "Download sdk:")
+    if err != nil {
+      errCh <- err
+    }
+    ch <- "SDK downloaded"
     defer wgDownload.Done()
   }()
 
   wgDownload.Wait()
 
   var wgInstall sync.WaitGroup
+
+  // install + unzip
   wgInstall.Add(2)
-  fmt.Println("Installing ...")
+
+  ch <- "Installing ..."
   go func() {
-    unzip(basiclite, path.Join(outputDir, basiclite))
+    _, err := unzip(basiclite, path.Join(outputDir, basiclite))
+    if err != nil {
+      errCh <- err
+    }
     defer wgInstall.Done()
   }()
 
   go func() {
-    unzip(sdk, path.Join(outputDir, sdk))
+    _, err := unzip(sdk, path.Join(outputDir, sdk))
+    if err != nil {
+      errCh <- err
+    }
     defer wgInstall.Done()
   }()
 
@@ -232,15 +284,17 @@ func Install(outputDir string) error {
 
   err = rename(outputDir)
   if err != nil {
-    return err
+    errCh <- err
   }
 
-  clean([]string{
+  err = clean([]string{
     basiclite,
     sdk,
   })
+  if err != nil {
+    errCh <- err
+  }
 
-  fmt.Printf("Driver installed: %s\n", outputDir)
-
-  return nil
+  doneMsg := fmt.Sprintf("Driver installed: %s\n", outputDir)
+  ch <- doneMsg
 }
