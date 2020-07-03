@@ -165,14 +165,15 @@ func rename(rootPath string) error {
     return err
   }
 
-  os.Rename(path.Join(rootPath, instanclientPath), path.Join(rootPath, "instantclient"))
-
-  return nil
+  return os.Rename(path.Join(rootPath, instanclientPath), path.Join(rootPath, "instantclient"))
 }
 
 func clean(toRemove []string) error {
   for _, f := range toRemove {
-    return os.Remove(f)
+    err := os.Remove(f)
+    if err != nil {
+      return err
+    }
   }
 
   return nil
